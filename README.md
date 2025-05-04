@@ -51,7 +51,6 @@ Professional-grade image processing and augmentation tool for computer vision wo
 - Spatial transformations (flipping, rotation, zooming)
 - Color adjustments (brightness, contrast)
 - Noise addition (Gaussian, Salt & Pepper)
-- Pet-specific augmentations (fur noise, ear occlusion)
 
 ### 📊 Dataset Tools
 - Comprehensive dataset statistics
