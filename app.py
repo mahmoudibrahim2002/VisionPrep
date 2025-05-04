@@ -22,7 +22,6 @@ NORMALIZATION_SCHEMES = {
     'ImageNet': {'mean': [0.485, 0.456, 0.406], 'std': [0.229, 0.224, 0.225]},
     'Grayscale': {'mean': 0.5, 'std': 0.5},
     'Custom': {'mean': 0.0, 'std': 1.0},
-    'PetImages': {'mean': [0.478, 0.443, 0.401], 'std': [0.268, 0.265, 0.275]}
 }
 
 # New: Animation presets
@@ -599,99 +598,6 @@ def apply_morphological_operation(img, operation, kernel_shape, kernel_size, ite
         return cv2.morphologyEx(img, cv2.MORPH_BLACKHAT, kernel)
     return img
 
-def apply_fur_enhancement(img, strength=1.0):
-    """Enhance fur texture using CLAHE and edge preservation"""
-    if len(img.shape) == 3:
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-        l, a, b = cv2.split(img)
-        
-        # Apply CLAHE to L channel
-        clahe = cv2.createCLAHE(clipLimit=3.0*strength, tileGridSize=(8,8))
-        l = clahe.apply(l)
-        
-        # Merge channels and convert back
-        img = cv2.merge((l, a, b))
-        img = cv2.cvtColor(img, cv2.COLOR_LAB2BGR)
-    else:
-        clahe = cv2.createCLAHE(clipLimit=3.0*strength, tileGridSize=(8,8))
-        img = clahe.apply(img)
-    return img
-
-def apply_pet_eye_enhancement(img, strength=1.0):
-    """Enhance eyes in pet images"""
-    if len(img.shape) == 3:
-        # Convert to HSV color space
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        h, s, v = cv2.split(hsv)
-        
-        # Enhance V channel
-        v = cv2.addWeighted(v, 1.0 + (0.2 * strength), 
-                          cv2.GaussianBlur(v, (0,0), 5), 
-                          -0.2 * strength, 0)
-        
-        # Merge back and convert
-        hsv = cv2.merge((h, s, v))
-        img = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-    return img
-
-def apply_background_simplification(img, method="edge_preserving"):
-    """Simplify background to focus on animal"""
-    if method == "edge_preserving":
-        return cv2.edgePreservingFilter(img, flags=1, sigma_s=60, sigma_r=0.4)
-    elif method == "stylization":
-        return cv2.stylization(img, sigma_s=60, sigma_r=0.07)
-    return img
-
-def apply_pet_specific_augmentation(img, augmentation_type, params):
-    """Apply pet-specific augmentations"""
-    if augmentation_type == "fur_noise":
-        # Add noise that resembles fur patterns
-        noise = np.random.normal(0, params, img.shape[:2])
-        noise = cv2.GaussianBlur(noise, (5,5), 0)
-        noise = np.expand_dims(noise, axis=2)
-        if len(img.shape) == 3:
-            noise = np.repeat(noise, 3, axis=2)
-        noisy = img + noise
-        return np.clip(noisy, 0, 255).astype(np.uint8)
-    
-    elif augmentation_type == "ear_occlusion":
-        # Simulate ear occlusion (common in pet photos)
-        h, w = img.shape[:2]
-        mask = np.zeros((h, w), dtype=np.uint8)
-        
-        # Create random triangle for ear
-        pt1 = (random.randint(w//4, w//2), random.randint(0, h//4))
-        pt2 = (random.randint(0, w//4), random.randint(h//4, h//2))
-        pt3 = (random.randint(w//4, w//2), random.randint(h//4, h//2))
-        
-        triangle = np.array([pt1, pt2, pt3], dtype=np.int32)
-        cv2.fillConvexPoly(mask, triangle, 255)
-        
-        # Apply occlusion
-        occluded = img.copy()
-        occluded[mask > 0] = random.randint(0, 255)
-        return occluded
-    
-    elif augmentation_type == "whisker_enhancement":
-        # Enhance whiskers using line detection
-        if len(img.shape) == 3:
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = img.copy()
-        
-        # Detect lines (whiskers)
-        lsd = cv2.createLineSegmentDetector(0)
-        lines = lsd.detect(gray)[0]
-        
-        if lines is not None:
-            for line in lines:
-                x1, y1, x2, y2 = line[0]
-                cv2.line(img, (int(x1), int(y1)), (int(x2), int(y2)), 
-                        (255, 255, 255), 1)
-        return img
-    
-    return img
-
 def normalize_image(img, scheme_name, custom_mean=None, custom_std=None):
     """Normalize image according to scheme"""
     if scheme_name == "None":
@@ -718,7 +624,7 @@ def normalize_image(img, scheme_name, custom_mean=None, custom_std=None):
 
 
 def process_single_image(img_path, processing_options, output_path=None, is_preview=False):
-    """Process a single image with all specified options including pet-specific processing"""
+    """Process a single image with all specified options"""
     try:
         img = cv2.imread(str(img_path))
         if img is None:
@@ -949,7 +855,7 @@ def home_page():
     </style>
     
     <div class="hero-section">
-        <img class="hero-logo" src="https://sdmntprukwest.oaiusercontent.com/files/00000000-1b5c-6243-9ee4-e1ff8d01b2f5/raw?se=2025-05-04T19%3A39%3A26Z&sp=r&sv=2024-08-04&sr=b&scid=6fe8f62f-9da3-5d9f-86f2-3fc7106dc7fc&skoid=54ae6e2b-352e-4235-bc96-afa2512cc978&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-04T09%3A08%3A53Z&ske=2025-05-05T09%3A08%3A53Z&sks=b&skv=2024-08-04&sig=4pQG4K9uexwittZ36nEXVvl8J4lkzAtE3/nePTMyOFk%3D" 
+        <img class="hero-logo" src="https://camo.githubusercontent.com/fb1f34ec88e4bc88e8d0d139cc7ff48c89ab8a96f8d15c0488a7f71f6ff2ccfe/68747470733a2f2f73646d6e747072756b776573742e6f616975736572636f6e74656e742e636f6d2f66696c65732f30303030303030302d316235632d363234332d396565342d6531666638643031623266352f7261773f73653d323032352d30352d3034543139253341333925334132365a2673703d722673763d323032342d30382d30342673723d6226736369643d36666538663632662d396461332d356439662d383666322d33666337313036646337666326736b6f69643d35346165366532622d333532652d343233352d626339362d61666132353132636339373826736b7469643d61343863636135362d653664612d343834652d613831342d39633834393635326263623326736b743d323032352d30352d3034543039253341303825334135335a26736b653d323032352d30352d3035543039253341303825334135335a26736b733d6226736b763d323032342d30382d3034267369673d34705147344b39756578776974745a33366e455856766c384a346c6b7a417445332f6e6550544d794f466b253344" 
              alt="VisionPrep Logo">
         <h1 class="title-text">Advanced Image Processing Pipeline</h1>
         <p class="subtitle-text">Transform, enhance, and process your images with professional-grade tools</p>
@@ -1296,7 +1202,7 @@ def apply_histogram_equalization(img):
         return cv2.equalizeHist(img)
     
 def basic_processing_page():
-    """Enhanced Basic Processing Page with Pet-Specific Features"""
+    """Enhanced Basic Processing Page"""
     st.title("🔧 Basic Image Processing")
     st.markdown("""
     <style>
@@ -1328,7 +1234,7 @@ def basic_processing_page():
         
         show_preview_images(st.session_state.preview_paths, root_folder)
         
-        # Processing options with tabs - REMOVED "Pet-Specific" tab
+        # Processing options with tabs
         st.subheader("⚙️ Processing Options", divider='rainbow')
         
         tab1, tab2, tab3, tab4 = st.tabs([
@@ -1916,8 +1822,6 @@ def apply_augmentation(img, aug_type, params):
         coords = [np.random.randint(0, i-1, int(num_pepper)) for i in img.shape]
         noisy[coords[0], coords[1]] = 0
         return noisy
-    elif aug_type in ["fur_noise", "ear_occlusion", "whisker_enhancement"]:
-        return apply_pet_specific_augmentation(img, aug_type, params)
     return img
 
 def data_augmentation_page():
@@ -2360,7 +2264,7 @@ def main():
         st.markdown(
             """
             <div style="text-align: center;">
-                <img class="sidebar-logo" src="https://sdmntprukwest.oaiusercontent.com/files/00000000-1b5c-6243-9ee4-e1ff8d01b2f5/raw?se=2025-05-04T19%3A39%3A26Z&sp=r&sv=2024-08-04&sr=b&scid=6fe8f62f-9da3-5d9f-86f2-3fc7106dc7fc&skoid=54ae6e2b-352e-4235-bc96-afa2512cc978&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-04T09%3A08%3A53Z&ske=2025-05-05T09%3A08%3A53Z&sks=b&skv=2024-08-04&sig=4pQG4K9uexwittZ36nEXVvl8J4lkzAtE3/nePTMyOFk%3D" 
+                <img class="sidebar-logo" src="https://camo.githubusercontent.com/fb1f34ec88e4bc88e8d0d139cc7ff48c89ab8a96f8d15c0488a7f71f6ff2ccfe/68747470733a2f2f73646d6e747072756b776573742e6f616975736572636f6e74656e742e636f6d2f66696c65732f30303030303030302d316235632d363234332d396565342d6531666638643031623266352f7261773f73653d323032352d30352d3034543139253341333925334132365a2673703d722673763d323032342d30382d30342673723d6226736369643d36666538663632662d396461332d356439662d383666322d33666337313036646337666326736b6f69643d35346165366532622d333532652d343233352d626339362d61666132353132636339373826736b7469643d61343863636135362d653664612d343834652d613831342d39633834393635326263623326736b743d323032352d30352d3034543039253341303825334135335a26736b653d323032352d30352d3035543039253341303825334135335a26736b733d6226736b763d323032342d30382d3034267369673d34705147344b39756578776974745a33366e455856766c384a346c6b7a417445332f6e6550544d794f466b253344" 
                      alt="VisionPrep Logo">
                 <h1 class="sidebar-title">VisionPrep</h1>
             </div>
