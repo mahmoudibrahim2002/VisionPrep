@@ -855,7 +855,7 @@ def home_page():
     </style>
     
     <div class="hero-section">
-        <img class="hero-logo" src="https://camo.githubusercontent.com/fb1f34ec88e4bc88e8d0d139cc7ff48c89ab8a96f8d15c0488a7f71f6ff2ccfe/68747470733a2f2f73646d6e747072756b776573742e6f616975736572636f6e74656e742e636f6d2f66696c65732f30303030303030302d316235632d363234332d396565342d6531666638643031623266352f7261773f73653d323032352d30352d3034543139253341333925334132365a2673703d722673763d323032342d30382d30342673723d6226736369643d36666538663632662d396461332d356439662d383666322d33666337313036646337666326736b6f69643d35346165366532622d333532652d343233352d626339362d61666132353132636339373826736b7469643d61343863636135362d653664612d343834652d613831342d39633834393635326263623326736b743d323032352d30352d3034543039253341303825334135335a26736b653d323032352d30352d3035543039253341303825334135335a26736b733d6226736b763d323032342d30382d3034267369673d34705147344b39756578776974745a33366e455856766c384a346c6b7a417445332f6e6550544d794f466b253344" 
+        <img class="hero-logo" src="https://i.ibb.co/FfgTBXR/Chat-GPT-Image-Sep-3-2025-02-48-58-PM.png" 
              alt="VisionPrep Logo">
         <h1 class="title-text">Advanced Image Processing Pipeline</h1>
         <p class="subtitle-text">Transform, enhance, and process your images with professional-grade tools</p>
@@ -1825,7 +1825,7 @@ def apply_augmentation(img, aug_type, params):
     return img
 
 def data_augmentation_page():
-    """Enhanced data augmentation page with blur and sharpening options"""
+    """Enhanced data augmentation page with separate folders for each augmentation type"""
     st.title("🔄 Data Augmentation")
     st.markdown("""
     <style>
@@ -1991,41 +1991,41 @@ def data_augmentation_page():
                         key="noise_amount"
                     )
         
-        # Generate all possible augmentation options
+        # Generate all possible augmentation options with folder names
         augmentations = []
         if flip_h:
-            augmentations.append(("horizontal_flip", None))
+            augmentations.append(("horizontal_flip", None, "horizontal_flip"))
         if flip_v:
-            augmentations.append(("vertical_flip", None))
+            augmentations.append(("vertical_flip", None, "vertical_flip"))
         if rotate:
             if rotation_mode == "Fixed Angle":
-                augmentations.append(("rotate", rotation_angle))
+                augmentations.append(("rotate", rotation_angle, f"rotate_{rotation_angle}"))
             else:
-                augmentations.append(("rotate_range", (rotation_min, rotation_max)))
+                augmentations.append(("rotate_range", (rotation_min, rotation_max), "rotate_range"))
         if zoom:
             if zoom_mode == "Fixed":
-                augmentations.append(("zoom", zoom_factor))
+                augmentations.append(("zoom", zoom_factor, f"zoom_{zoom_factor}"))
             else:
-                augmentations.append(("zoom_range", (zoom_min, zoom_max)))
+                augmentations.append(("zoom_range", (zoom_min, zoom_max), "zoom_range"))
         if brightness:
             if brightness_mode == "Fixed":
-                augmentations.append(("brightness", brightness_factor))
+                augmentations.append(("brightness", brightness_factor, f"brightness_{brightness_factor}"))
             else:
-                augmentations.append(("brightness_range", (brightness_min, brightness_max)))
+                augmentations.append(("brightness_range", (brightness_min, brightness_max), "brightness_range"))
         if contrast:
             if contrast_mode == "Fixed":
-                augmentations.append(("contrast", contrast_factor))
+                augmentations.append(("contrast", contrast_factor, f"contrast_{contrast_factor}"))
             else:
-                augmentations.append(("contrast_range", (contrast_min, contrast_max)))
+                augmentations.append(("contrast_range", (contrast_min, contrast_max), "contrast_range"))
         if blur:
-            augmentations.append(("gaussian_blur", (blur_kernel, blur_sigma)))
+            augmentations.append(("gaussian_blur", (blur_kernel, blur_sigma), f"blur_{blur_kernel}_{blur_sigma}"))
         if sharpen:
-            augmentations.append(("sharpening", (sharpen_method, sharpen_strength)))
+            augmentations.append(("sharpening", (sharpen_method, sharpen_strength), f"sharpen_{sharpen_method}_{sharpen_strength}"))
         if noise:
             if noise_mode == "Gaussian":
-                augmentations.append(("gaussian_noise", noise_scale))
+                augmentations.append(("gaussian_noise", noise_scale, f"gaussian_noise_{noise_scale}"))
             else:
-                augmentations.append(("salt_pepper", noise_amount))
+                augmentations.append(("salt_pepper", noise_amount, f"salt_pepper_{noise_amount}"))
         
         # Preview augmentations
         if st.button("👁️ Preview Augmentations", key="preview_augmentations") and st.session_state.preview_paths:
@@ -2037,8 +2037,8 @@ def data_augmentation_page():
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             
             # Apply each augmentation to show examples
-            for aug_type, params in augmentations:
-                st.markdown(f"#### {aug_type.replace('_', ' ').title()}")
+            for aug_type, params, folder_name in augmentations:
+                st.markdown(f"#### {aug_type.replace('_', ' ').title()} (Folder: {folder_name})")
                 cols = st.columns(3)
                 
                 for i in range(3):  # Show 3 examples per augmentation
@@ -2071,82 +2071,56 @@ def data_augmentation_page():
         # Batch processing options
         st.subheader("⚡ Batch Augmentation", divider='rainbow')
         
-        output_folder = st.text_input("Output folder name:", "augmented_dataset", key="aug_output_folder")
+        base_output_folder = st.text_input("Base output folder name:", "augmented_dataset", key="aug_base_output_folder")
         copies_per_image = st.number_input(
-            "Copies per image", 
+            "Copies per augmentation type", 
             min_value=1, 
-            max_value=100, 
+            max_value=20, 
             value=1,
-            key="copies_per_image"
+            key="copies_per_image",
+            help="Number of augmented copies to generate for each augmentation type"
         )
         
         if st.button("🚀 Generate Augmented Dataset", key="augment_button", type="primary"):
-            with st.spinner("✨ Generating augmented images..."):
-                start_time = time.time()
-                
-                # Create output folder
-                output_path = Path(output_folder)
-                output_path.mkdir(exist_ok=True)
-                
-                # Process all images
-                total_images = 0
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                
-                for i, img_path in enumerate(all_image_paths):
-                    # Load original image
-                    img = cv2.imread(str(img_path))
-                    if img is None:
-                        continue
+            if not augmentations:
+                st.error("Please select at least one augmentation type!")
+            else:
+                with st.spinner("✨ Generating augmented images..."):
+                    start_time = time.time()
                     
-                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    # Create base output folder
+                    base_output_path = Path(base_output_folder)
+                    base_output_path.mkdir(exist_ok=True)
                     
-                    # Save original (always)
-                    rel_path = img_path.relative_to(root_folder)
-                    original_save_path = output_path / rel_path
-                    original_save_path.parent.mkdir(parents=True, exist_ok=True)
-                    Image.fromarray(img).save(original_save_path)
-                    total_images += 1
+                    # Create folders for each augmentation type
+                    augmentation_folders = {}
+                    for aug_type, params, folder_name in augmentations:
+                        folder_path = base_output_path / folder_name
+                        folder_path.mkdir(exist_ok=True)
+                        augmentation_folders[aug_type] = folder_path
                     
-                    # Determine how many augmentations we need to apply
-                    num_augmentations = len(augmentations)
-                    if num_augmentations == 0:
-                        continue  # No augmentations selected
+                    # Process all images
+                    total_images = 0
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
                     
-                    # Generate augmented copies
-                    for copy_num in range(copies_per_image):
-                        augmented = img.copy()
+                    for i, img_path in enumerate(all_image_paths):
+                        # Load original image
+                        img = cv2.imread(str(img_path))
+                        if img is None:
+                            continue
                         
-                        if copy_num < num_augmentations:
-                            # Apply single augmentation for first N copies
-                            aug_type, params = augmentations[copy_num]
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        
+                        # Process each augmentation type
+                        for aug_type, params, folder_name in augmentations:
+                            folder_path = augmentation_folders[aug_type]
                             
-                            # Handle range parameters
-                            if "range" in aug_type:
-                                if aug_type == "rotate_range":
-                                    angle = random.uniform(params[0], params[1])
-                                    augmented = apply_augmentation(augmented, "rotate", angle)
-                                elif aug_type == "zoom_range":
-                                    scale = random.uniform(params[0], params[1])
-                                    augmented = apply_augmentation(augmented, "zoom", scale)
-                                elif aug_type == "brightness_range":
-                                    factor = random.uniform(params[0], params[1])
-                                    augmented = apply_augmentation(augmented, "brightness", factor)
-                                elif aug_type == "contrast_range":
-                                    factor = random.uniform(params[0], params[1])
-                                    augmented = apply_augmentation(augmented, "contrast", factor)
-                            elif aug_type == "gaussian_blur":
-                                augmented = cv2.GaussianBlur(augmented, (params[0], params[0]), params[1])
-                            elif aug_type == "sharpening":
-                                augmented = apply_sharpening(augmented, params[0], params[1])
-                            else:
-                                augmented = apply_augmentation(augmented, aug_type, params)
-                        else:
-                            # If we need more copies than augmentations, combine them randomly
-                            num_to_apply = random.randint(1, num_augmentations)
-                            selected_augmentations = random.sample(augmentations, num_to_apply)
-                            
-                            for aug_type, params in selected_augmentations:
+                            # Generate multiple copies for this augmentation type
+                            for copy_num in range(copies_per_image):
+                                augmented = img.copy()
+                                
+                                # Apply the augmentation
                                 if "range" in aug_type:
                                     if aug_type == "rotate_range":
                                         angle = random.uniform(params[0], params[1])
@@ -2166,39 +2140,67 @@ def data_augmentation_page():
                                     augmented = apply_sharpening(augmented, params[0], params[1])
                                 else:
                                     augmented = apply_augmentation(augmented, aug_type, params)
+                                
+                                # Save augmented image
+                                rel_path = img_path.relative_to(root_folder)
+                                if copies_per_image > 1:
+                                    # Add copy number to filename if multiple copies
+                                    aug_save_path = folder_path / f"{img_path.stem}_{copy_num+1}{img_path.suffix}"
+                                else:
+                                    aug_save_path = folder_path / rel_path
+                                
+                                aug_save_path.parent.mkdir(parents=True, exist_ok=True)
+                                Image.fromarray(augmented).save(aug_save_path)
+                                total_images += 1
                         
-                        # Save augmented image
-                        if copy_num < num_augmentations:
-                            # For single augmentations, name them with the augmentation type
-                            aug_type = augmentations[copy_num][0]
-                            aug_save_path = output_path / rel_path.parent / f"{img_path.stem}_{aug_type}{img_path.suffix}"
-                        else:
-                            # For combined augmentations, just use a sequential number
-                            aug_save_path = output_path / rel_path.parent / f"{img_path.stem}_aug{copy_num}{img_path.suffix}"
+                        # Update progress
+                        progress = (i + 1) / len(all_image_paths)
+                        progress_bar.progress(progress)
+                        status_text.text(f"📊 Progress: {i+1}/{len(all_image_paths)} images | Total generated: {total_images}")
+                    
+                    # Final report with animation
+                    elapsed_time = time.time() - start_time
+                    st.balloons()
+                    
+                    # Create folder structure summary
+                    folder_summary = "## 📁 Folder Structure Created:\n\n"
+                    folder_summary += f"- **Base folder**: {base_output_folder}/\n"
+                    
+                    for aug_type, params, folder_name in augmentations:
+                        folder_summary += f"- **{aug_type.replace('_', ' ').title()}**: {base_output_folder}/{folder_name}/\n"
+                    
+                    st.success(
+                        f"""
+                        ## ✅ Augmentation Complete!
                         
-                        aug_save_path.parent.mkdir(parents=True, exist_ok=True)
-                        Image.fromarray(augmented).save(aug_save_path)
-                        total_images += 1
+                        - **Original images**: {len(all_image_paths)}
+                        - **Augmented images**: {total_images}
+                        - **Total generated**: {total_images}
+                        - **Time taken**: {elapsed_time:.2f} seconds
+                        - **Speed**: {total_images/elapsed_time:.2f} images/second
+                        
+                        {folder_summary}
+                        """
+                    )
                     
-                    # Update progress
-                    progress = (i + 1) / len(all_image_paths)
-                    progress_bar.progress(progress)
-                    status_text.text(f"📊 Progress: {i+1}/{len(all_image_paths)} images | Total generated: {total_images}")
-                
-                # Final report with animation
-                elapsed_time = time.time() - start_time
-                st.balloons()
-                st.success(
-                    f"""
-                    ## ✅ Augmentation Complete!
+                    # Show sample of generated images
+                    st.subheader("📸 Sample Augmented Images", divider='rainbow')
+                    sample_cols = st.columns(min(3, len(augmentations)))
                     
-                    - **Original images**: {len(all_image_paths)}
-                    - **Augmented images**: {total_images - len(all_image_paths)}
-                    - **Total generated**: {total_images}
-                    - **Time taken**: {elapsed_time:.2f} seconds
-                    """
-                )
-
+                    for i, (aug_type, params, folder_name) in enumerate(augmentations[:3]):
+                        with sample_cols[i]:
+                            folder_path = base_output_path / folder_name
+                            augmented_images = list(folder_path.glob("*.*"))
+                            if augmented_images:
+                                sample_img = random.choice(augmented_images)
+                                img = cv2.imread(str(sample_img))
+                                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                                st.image(
+                                    img,
+                                    caption=f"{aug_type.replace('_', ' ').title()}",
+                                    use_container_width=True
+                                )
+                                st.caption(f"Folder: {folder_name}")
 def main():
     """Main application with dark mode sidebar"""
     # Custom sidebar styling
@@ -2264,7 +2266,7 @@ def main():
         st.markdown(
             """
             <div style="text-align: center;">
-                <img class="sidebar-logo" src="https://camo.githubusercontent.com/fb1f34ec88e4bc88e8d0d139cc7ff48c89ab8a96f8d15c0488a7f71f6ff2ccfe/68747470733a2f2f73646d6e747072756b776573742e6f616975736572636f6e74656e742e636f6d2f66696c65732f30303030303030302d316235632d363234332d396565342d6531666638643031623266352f7261773f73653d323032352d30352d3034543139253341333925334132365a2673703d722673763d323032342d30382d30342673723d6226736369643d36666538663632662d396461332d356439662d383666322d33666337313036646337666326736b6f69643d35346165366532622d333532652d343233352d626339362d61666132353132636339373826736b7469643d61343863636135362d653664612d343834652d613831342d39633834393635326263623326736b743d323032352d30352d3034543039253341303825334135335a26736b653d323032352d30352d3035543039253341303825334135335a26736b733d6226736b763d323032342d30382d3034267369673d34705147344b39756578776974745a33366e455856766c384a346c6b7a417445332f6e6550544d794f466b253344" 
+                <img class="sidebar-logo" src="https://i.ibb.co/FfgTBXR/Chat-GPT-Image-Sep-3-2025-02-48-58-PM.png" 
                      alt="VisionPrep Logo">
                 <h1 class="sidebar-title">VisionPrep</h1>
             </div>
