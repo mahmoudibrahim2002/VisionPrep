@@ -1,10 +1,7 @@
 # 🖼️ VisionPrep - Advanced Image Processing Pipeline
 
-<img src="https://i.ibb.co/Lz7CPgKd/Chat-GPT-Image-Sep-3-2025-02-33-29-PM.png" 
-     width="400" 
-     height="200" 
-     alt="VisionPrep Banner">
-     
+![Project Banner](https://i.ibb.co/Lz7CPgKd/Chat-GPT-Image-Sep-3-2025-02-33-29-PM.png)
+
 Professional-grade image processing and augmentation tool for computer vision workflows. Transform, enhance, and process your images with this comprehensive pipeline built with Streamlit and OpenCV.
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
